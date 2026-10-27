@@ -1,0 +1,9 @@
+# Dedup log — 2026-10-26T17:25:56.712376
+# Seed = 42
+
+Removed 3 exact duplicate(s) (MD5 collision):
+  REMOVED  C:\Users\SOUMI MONDAL\Desktop\TB_project(AI-Medical)\litetbnet\data\TB_Chest_Radiography_Database\Tuberculosis\Tuberculosis-244.png  (class=Tuberculosis, md5=ab7b3732a223c780a3af4307583878c8)
+  REMOVED  C:\Users\SOUMI MONDAL\Desktop\TB_project(AI-Medical)\litetbnet\data\TB_Chest_Radiography_Database\Tuberculosis\Tuberculosis-348.png  (class=Tuberculosis, md5=13ad2e91b8a719fa6ce0e87a4ea0b8b1)
+  REMOVED  C:\Users\SOUMI MONDAL\Desktop\TB_project(AI-Medical)\litetbnet\data\TB_Chest_Radiography_Database\Tuberculosis\Tuberculosis-510.png  (class=Tuberculosis, md5=11c7238f135a666dfe39591086fa0320)
+
+Before dedup: 4200  |  After dedup: 4197  |  Removed: 3

@@ -1,0 +1,20 @@
+# Python / Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Data & Large Files
+data/
+outputs/smoke_runs/
+*.npy
+*.pt
+*.pth
+*.png
+*.jpg
+*.jpeg
+
+# Environments
+venv/
+.env

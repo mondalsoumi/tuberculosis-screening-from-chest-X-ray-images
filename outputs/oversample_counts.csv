@@ -1,0 +1,5 @@
+method,n_total,n_tb,n_normal,status
+none,120,20,100,OK
+smote,200,100,100,OK
+adasyn,197,97,100,OK
+bsmote,200,100,100,OK
