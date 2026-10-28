@@ -55,7 +55,7 @@ class GPUBatcher:
         for start in range(0, total, self.batch_size):
             b_idx = idx[start: start + self.batch_size]
             x = self.X[b_idx].float() / 255.0          # (B, H, W)  float [0,1]
-            x = x.unsqueeze(1).expand(-1, 3, -1, -1)   # (B, 3, H, W)
+            x = x.unsqueeze(1).expand(-1, 3, -1, -1).contiguous()   # (B, 3, H, W)
             if self.augment:
                 x = self._augment(x)
             if self.mask_border > 0:

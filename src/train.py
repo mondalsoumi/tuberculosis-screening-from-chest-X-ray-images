@@ -88,6 +88,7 @@ def _evaluate(model, batcher, device, use_amp):
                 logits = model(xb)
         else:
             logits = model(xb)
+        logits = logits.float()
         loss = bce(logits, yb).mean().item()
         total_loss += loss * xb.shape[0]; total_n += xb.shape[0]
         probs = torch.sigmoid(logits).squeeze(1).cpu().numpy()
@@ -179,17 +180,23 @@ def run(model_name, method, cache, out_root,
     best_state = None
     best_epoch = 0
 
+    ckpt = None
     if last_pt.exists():
-        ckpt = torch.load(last_pt, map_location=device)
+        try:
+            ckpt = torch.load(last_pt, map_location=device, weights_only=False)
+        except Exception as e:
+            print(f"[train] corrupt last.pt ({e}); restarting run", flush=True)
+            last_pt.unlink()
+    if ckpt is not None:
         model.load_state_dict(ckpt["model"])
         opt.load_state_dict(ckpt["optimizer"])
         sched.load_state_dict(ckpt["scheduler"])
         scaler.load_state_dict(ckpt["scaler"])
-        start_epoch    = ckpt["epoch"] + 1
-        history        = ckpt["history"]
-        best_val_loss  = ckpt["best_val_loss"]
-        best_state     = ckpt["best_state"]
-        best_epoch     = ckpt.get("best_epoch", 0)
+        start_epoch   = ckpt["epoch"] + 1
+        history       = ckpt["history"]
+        best_val_loss = ckpt["best_val_loss"]
+        best_state    = ckpt["best_state"]
+        best_epoch    = ckpt.get("best_epoch", 0)
         print(f"[train] resumed from epoch {ckpt['epoch']}", flush=True)
 
     # ── history csv ───────────────────────────────────────────────────────────
@@ -197,8 +204,9 @@ def run(model_name, method, cache, out_root,
     csv_fields = ["epoch", "train_loss", "train_acc", "val_loss", "val_acc",
                   "lr", "seconds"]
     if not hist_csv.exists():
-        with open(hist_csv, "w", newline="") as f:
-            csv.DictWriter(f, fieldnames=csv_fields).writeheader()
+     with open(hist_csv, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=csv_fields)
+        w.writeheader(); w.writerows(history)
 
     # ── epoch loop ────────────────────────────────────────────────────────────
     peak_gpu_mb = 0
@@ -259,18 +267,14 @@ def run(model_name, method, cache, out_root,
 
         # ── checkpoint ────────────────────────────────────────────────────────
         tmp_pt = run_dir / "_last_tmp.pt"
-        if tmp_pt.exists():
-            try:
-                tmp_pt.unlink()
-            except OSError:
-                pass
         torch.save(dict(
             model=model.state_dict(), optimizer=opt.state_dict(),
             scheduler=sched.state_dict(), scaler=scaler.state_dict(),
             epoch=epoch, history=history,
             best_val_loss=best_val_loss, best_state=best_state,
             best_epoch=best_epoch,
-        ), last_pt)
+        ), tmp_pt)
+        os.replace(tmp_pt, last_pt)
 
         if stop_after is not None and epoch >= stop_after:
             print(f"[train] stop_after={stop_after} at epoch {epoch}", flush=True)
@@ -279,6 +283,7 @@ def run(model_name, method, cache, out_root,
     # ── final evaluation ──────────────────────────────────────────────────────
     train_seconds = time.time() - t_train_start
 
+    assert best_state is not None, "no finite validation loss in any epoch (NaN/AMP problem)"
     model.load_state_dict(best_state)
 
     _, _, val_probs, val_labels = _evaluate(model, val_batcher, device, use_amp)
